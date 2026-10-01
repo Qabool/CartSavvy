@@ -1,25 +1,48 @@
 import os
+import time
 import json
 from crewai import Agent, Task, Crew, Process, LLM
 from tools import LocalEcommerceSearchTool
 
-def run_cartsavvy_crew(user_input: dict) -> dict:
-    # Set up Gemini LLM via CrewAI's native LLM wrapper
+def get_resilient_llm():
+    """
+    Attempts to initialize Gemini Flash models starting with the flagship model 
+    and falling back to secondary Flash variants if 503 capacity limits are hit.
+    """
     gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     
-# NEW (Compatible with Google Gemini API & CrewAI):
-    llm = LLM(
-        model="gemini/gemini-3.8-flash",
-        api_key=gemini_api_key,
-        temperature=0.2
-    )
+    # Priority list of active Gemini Flash endpoints in 2026
+    candidate_models = [
+        "gemini/gemini-3.8-flash",
+        "gemini/gemini-3.5-flash",
+        "gemini/gemini-3.5-flash-lite"
+    ]
+    
+    for model_name in candidate_models:
+        try:
+            return LLM(
+                model=model_name,
+                api_key=gemini_api_key,
+                temperature=0.2,
+                max_retries=3  # Automatic retries on 503/429
+            )
+        except Exception:
+            continue
+            
+    # Final fallback
+    return LLM(model="gemini/gemini-3.5-flash", api_key=gemini_api_key)
+
+
+def run_cartsavvy_crew(user_input: dict) -> dict:
+    # Initialize resilient LLM instance
+    llm = get_resilient_llm()
 
     search_tool = LocalEcommerceSearchTool()
 
-    # Agent 1: Product Research & Retrieval Agent
+    # Agent 1: Research Specialist
     retriever_agent = Agent(
         role="Pakistani E-Commerce Research Specialist",
-        goal="Find and fetch product listings for '{query}' across platforms in Pakistan like Daraz, Telemart, PriceOye, and Dvago.",
+        goal="Find product listings for '{query}' across Pakistani platforms like Daraz, Telemart, PriceOye, and Dvago.",
         backstory=(
             "You are an expert e-commerce research agent specialized in navigating Pakistani online markets. "
             "You accurately extract item specs, prices in PKR, seller trust ratings, and delivery terms."
@@ -29,12 +52,12 @@ def run_cartsavvy_crew(user_input: dict) -> dict:
         verbose=True
     )
 
-    # Agent 2: Comparison & Recommendation Agent
+    # Agent 2: Comparison Analyst
     analyzer_agent = Agent(
         role="CartSavvy Best-Value Analyst",
-        goal="Analyze prices, shipping fees, seller ratings, and warranty to calculate Best-Value scores and generate comparison outputs.",
+        goal="Analyze prices, shipping fees, seller ratings, and warranty to calculate Best-Value scores.",
         backstory=(
-            "You are a savvy shopping advisor for Pakistani consumers. You calculate the true landed cost (Price + Shipping), "
+            "You are a savvy shopping advisor for Pakistani consumers. You calculate the total landed cost (Price + Shipping), "
             "evaluate seller authenticity, flag potential fake discounts, and rank options strictly by user utility."
         ),
         llm=llm,
@@ -76,7 +99,18 @@ def run_cartsavvy_crew(user_input: dict) -> dict:
         verbose=True
     )
 
-    raw_result = crew.kickoff(inputs=user_input)
+    # Execute crew with exponential backoff handling for temporary 503 limits
+    retries = 3
+    for attempt in range(retries):
+        try:
+            raw_result = crew.kickoff(inputs=user_input)
+            break
+        except Exception as e:
+            if "503" in str(e) and attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))  # Wait 2s, then 4s before retry
+                continue
+            else:
+                raise e
     
     # Extract JSON string from raw output
     result_text = str(raw_result)
