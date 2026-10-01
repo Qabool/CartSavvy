@@ -55,9 +55,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# API Secret Setup
-if "GEMINI_API_KEY" in st.secrets:
-    os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+# API Secret Setup for Groq
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 if "SERPER_API_KEY" in st.secrets:
     os.environ["SERPER_API_KEY"] = st.secrets["SERPER_API_KEY"]
 
