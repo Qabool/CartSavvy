@@ -57,7 +57,9 @@ st.markdown("""
 
 # API Secret Setup for Groq
 if "GROQ_API_KEY" in st.secrets:
-    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+    groq_key = st.secrets["GROQ_API_KEY"]
+    os.environ["GROQ_API_KEY"] = groq_key
+    os.environ["OPENAI_API_KEY"] = groq_key  # Backup for OpenAI wrapper compatibility
 if "SERPER_API_KEY" in st.secrets:
     os.environ["SERPER_API_KEY"] = st.secrets["SERPER_API_KEY"]
 
