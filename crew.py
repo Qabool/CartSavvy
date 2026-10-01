@@ -7,13 +7,15 @@ def run_cartsavvy_crew(user_input: dict) -> dict:
     # Get Groq API Key
     groq_api_key = os.getenv("GROQ_API_KEY")
 
-    # Configure Groq LLM (High-speed Llama-3.3 70B model with tool capabilities)
+# NEW (Direct connection to Groq API via Native OpenAI endpoint):
+    groq_api_key = os.getenv("GROQ_API_KEY")
+
     llm = LLM(
-        model="groq/llama-3.3-70b-versatile",
+        model="openai/llama-3.3-70b-versatile",
+        base_url="https://api.groq.com/openai/v1",
         api_key=groq_api_key,
         temperature=0.2
     )
-
     search_tool = LocalEcommerceSearchTool()
 
     # Agent 1: Product Research Specialist
