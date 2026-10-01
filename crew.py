@@ -7,9 +7,9 @@ def run_cartsavvy_crew(user_input: dict) -> dict:
     # Set up Gemini LLM via CrewAI's native LLM wrapper
     gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     
-# NEW (Gemini 2.0 Flash):
+# NEW (Compatible with Google Gemini API & CrewAI):
     llm = LLM(
-        model="gemini/gemini-2.0-flash",
+        model="gemini/gemini-3.8-flash",
         api_key=gemini_api_key,
         temperature=0.2
     )
