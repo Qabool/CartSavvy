@@ -63,9 +63,10 @@ if "SERPER_API_KEY" in st.secrets:
 
 # Sidebar - Search Controls
 with st.sidebar:
+# NEW (Compatible with Streamlit 2026+):
     logo_path = "assets/cartsavvy_logo.png"
     if os.path.exists(logo_path):
-        st.image(logo_path, use_column_width=True)
+        st.image(logo_path, width="stretch")
     else:
         st.title("🛒 CartSavvy")
     
