@@ -4,21 +4,19 @@ from crewai import Agent, Task, Crew, Process, LLM
 from tools import LocalEcommerceSearchTool
 
 def run_cartsavvy_crew(user_input: dict) -> dict:
-    # 1. Fetch API key from environment
-    gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or os.getenv("OPENAI_API_KEY")
+    # Get Groq API Key
+    groq_api_key = os.getenv("GROQ_API_KEY")
 
-    # 2. Configure CrewAI LLM using Gemini's OpenAI-Compatible Endpoint
-    # This prevents LiteLLM 404/503 routing issues and ensures 100% stability.
+    # Configure Groq LLM (High-speed Llama-3.3 70B model with tool capabilities)
     llm = LLM(
-        model="openai/gemini-3.8-flash",
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        api_key=gemini_key,
+        model="groq/llama-3.3-70b-versatile",
+        api_key=groq_api_key,
         temperature=0.2
     )
 
     search_tool = LocalEcommerceSearchTool()
 
-    # Agent 1: Product Research & Retrieval Agent
+    # Agent 1: Product Research Specialist
     retriever_agent = Agent(
         role="Pakistani E-Commerce Research Specialist",
         goal="Find and fetch product listings for '{query}' across platforms in Pakistan like Daraz, Telemart, PriceOye, and Dvago.",
@@ -31,7 +29,7 @@ def run_cartsavvy_crew(user_input: dict) -> dict:
         verbose=True
     )
 
-    # Agent 2: Comparison & Recommendation Agent
+    # Agent 2: Comparison & Recommendation Analyst
     analyzer_agent = Agent(
         role="CartSavvy Best-Value Analyst",
         goal="Analyze prices, shipping fees, seller ratings, and warranty to calculate Best-Value scores and generate comparison outputs.",
